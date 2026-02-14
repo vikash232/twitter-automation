@@ -1,14 +1,19 @@
 #!/usr/bin/env python3
 """
-Generate a tweet with Google Gemini and post via X API (tweepy).
-Slot (morning/afternoon/evening) sets the prompt style; if not set, derived from current UTC hour.
-Env: GEMINI_API_KEY, TWITTER_CONSUMER_KEY, TWITTER_CONSUMER_SECRET, TWITTER_ACCESS_TOKEN, TWITTER_ACCESS_TOKEN_SECRET.
+Generate a tweet with Google Gemini and post to X.
+  - With API: set TWITTER_* env vars, run normally (requires X API credits).
+  - Free (no API): use --post-via-browser so the browser script posts; no X API keys or credits needed.
+Slot (morning/afternoon/evening) sets the prompt style.
+Env: GEMINI_API_KEY. For API posting add TWITTER_*; for browser posting run --import-from-brave once in post_tweet_browser.py.
 Inspired by: https://github.com/VishwaGauravIn/twitter-auto-poster-bot-ai
 """
 import os
 import re
+import subprocess
 import sys
+import time
 from datetime import datetime, timezone
+from pathlib import Path
 
 
 def get_slot():
@@ -52,20 +57,40 @@ PROMPTS = {
 
 
 def generate_tweet(slot: str) -> str:
-    import google.generativeai as genai
+    from google import genai
+    from google.genai.errors import ClientError
 
     api_key = os.environ.get("GEMINI_API_KEY")
     if not api_key:
         raise SystemExit("Set GEMINI_API_KEY (get one at https://aistudio.google.com/apikey)")
 
-    genai.configure(api_key=api_key)
-    # gemini-pro is deprecated; use a current model (e.g. gemini-1.5-flash or gemini-2.0-flash)
-    model_name = os.environ.get("GEMINI_MODEL", "gemini-1.5-flash")
-    model = genai.GenerativeModel(model_name)
+    client = genai.Client(api_key=api_key)
+    model_name = os.environ.get("GEMINI_MODEL", "gemini-2.5-flash")
     prompt = PROMPTS.get(slot, PROMPTS["morning"])
-    response = model.generate_content(prompt)
-    text = (response.text or "").strip()
-    # Remove surrounding quotes if present
+
+    max_retries = 3
+    for attempt in range(max_retries):
+        try:
+            response = client.models.generate_content(
+                model=model_name,
+                contents=prompt,
+            )
+            break
+        except ClientError as e:
+            if getattr(e, "status_code", None) == 429 and attempt < max_retries - 1:
+                wait = 20
+                print(f"Rate limited (429). Waiting {wait}s before retry {attempt + 2}/{max_retries}...", file=sys.stderr)
+                time.sleep(wait)
+            else:
+                raise
+
+    # Extract text from response (new SDK)
+    if response.text:
+        text = response.text.strip()
+    elif response.candidates and response.candidates[0].content.parts:
+        text = response.candidates[0].content.parts[0].text.strip()
+    else:
+        raise SystemExit("Gemini returned no text")
     text = re.sub(r'^["\']|["\']$', '', text)
     if len(text) > 280:
         text = text[:277] + "..."
@@ -90,12 +115,35 @@ def post_tweet(text: str) -> None:
         access_token=token,
         access_token_secret=token_secret,
     )
-    client.create_tweet(text=text)
-    print("Tweet posted.")
+    try:
+        client.create_tweet(text=text)
+        print("Tweet posted.")
+    except tweepy.errors.HTTPException as e:
+        if e.response.status_code == 402:
+            print("402 Payment Required: Your X account has no API credits. Add credits at https://developer.x.com (Billing / Products).", file=sys.stderr)
+            raise SystemExit(1) from e
+        raise
+
+
+def post_via_browser(text: str) -> None:
+    """Post using the browser script (no X API, no credits). Requires saved session from post_tweet_browser.py --import-from-brave."""
+    script_dir = Path(__file__).resolve().parent
+    browser_script = script_dir / "post_tweet_browser.py"
+    if not browser_script.exists():
+        raise SystemExit("post_tweet_browser.py not found. Run from repo root.")
+    # Pass literal tweet text; browser script posts it
+    proc = subprocess.run(
+        [sys.executable, str(browser_script), text],
+        cwd=str(script_dir),
+    )
+    if proc.returncode != 0:
+        raise SystemExit(proc.returncode)
+    print("Tweet posted (via browser).")
 
 
 def main():
     dry = "--dry-run" in sys.argv or "-n" in sys.argv
+    use_browser = "--post-via-browser" in sys.argv or "--browser" in sys.argv
     slot = get_slot()
     print(f"Slot: {slot}", file=sys.stderr)
 
@@ -105,7 +153,10 @@ def main():
     if dry:
         print("[dry-run] Would post the above.", file=sys.stderr)
         return
-    post_tweet(text)
+    if use_browser:
+        post_via_browser(text)
+    else:
+        post_tweet(text)
 
 
 if __name__ == "__main__":

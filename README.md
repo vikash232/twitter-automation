@@ -27,7 +27,7 @@ To have tweets go out at **8 AM, 1 PM, 6 PM** with zero daily manual steps:
 
 After that, nothing manual: EventBridge triggers Lambda at the right times, Lambda posts via the API.
 
-**AI + GitHub Actions (like [twitter-auto-poster-bot-ai](https://github.com/VishwaGauravIn/twitter-auto-poster-bot-ai)):** Gemini generates the tweet, X API posts it, GitHub Actions runs at 8 AM / 1 PM / 6 PM IST. No server, no writing tweets. Add repo secrets: `GEMINI_API_KEY` ([get key](https://aistudio.google.com/apikey)), `TWITTER_CONSUMER_KEY`, `TWITTER_CONSUMER_SECRET`, `TWITTER_ACCESS_TOKEN`, `TWITTER_ACCESS_TOKEN_SECRET`. Workflow: `.github/workflows/twitter-ai.yml`. Local test: `pip install -r requirements-ai.txt` then `SLOT=morning python3 post_tweet_ai.py --dry-run`. No browser, no “log in”, no opening X.
+**AI + GitHub Actions (like [twitter-auto-poster-bot-ai](https://github.com/VishwaGauravIn/twitter-auto-poster-bot-ai)):** Gemini generates the tweet, X API posts it, GitHub Actions runs at 8 AM / 1 PM / 6 PM IST. No server, no writing tweets. Add repo secrets: `GEMINI_API_KEY` ([get key](https://aistudio.google.com/apikey)), `TWITTER_CONSUMER_KEY`, `TWITTER_CONSUMER_SECRET`, `TWITTER_ACCESS_TOKEN`, `TWITTER_ACCESS_TOKEN_SECRET`. Workflow: `.github/workflows/twitter-ai.yml`. Local test: `pip install -r requirements-ai.txt` then `SLOT=morning python3 post_tweet_ai.py --dry-run`. **Free (no X API):** run `python3 post_tweet_ai.py --post-via-browser` so Gemini generates and the browser script posts; do `post_tweet_browser.py --import-from-brave` once first. No API credits needed. No browser, no “log in”, no opening X.
 
 (If you prefer **free** and don’t mind a one-time browser login and cron on your Mac, see **Free auto-post** below.)
 
@@ -207,6 +207,6 @@ To have Lambda post tweets automatically (no manual scheduling), you need Twitte
 - **schedule_tweets.py** – Opens 3 Twitter compose tabs (placeholder or from file).
 - **tweets.txt** – Draft tweets (one per line); used by browser script and by `sync_tweets_to_ssm.py` for Lambda.
 - **sync_tweets_to_ssm.py** – Pushes first 3 lines of `tweets.txt` to SSM so Lambda posts them at 8 AM / 1 PM / 6 PM IST.
-- **post_tweet_ai.py** – Gemini generates a DevOps/SRE tweet, tweepy posts via X API. Used by `.github/workflows/twitter-ai.yml`. See `requirements-ai.txt`.
+- **post_tweet_ai.py** – Gemini generates a DevOps/SRE tweet; posts via X API (tweepy) or, with `--post-via-browser`, via the browser script (free, no API credits). See `requirements-ai.txt`.
 - **remind_and_open.sh** – Notification + runs the script; use with cron for a daily reminder.
 - **lambda/** – `reminder.py` (email), `post_tweet.py` (Twitter API post), `deploy.sh`, **lambda/terraform/** (Terraform for profile `vikash-own`; optional auto-post).
