@@ -1,0 +1,10 @@
+# Tomorrow's tweets – one per line. Edit these, then: python3 schedule_tweets.py tweets.txt
+# 1 = morning (educational), 2 = afternoon (story/take), 3 = evening (question)
+# Format: hook. value. URL #Hashtag1 #Hashtag2
+
+Is your homelab a mess of bookmarks? Build a single pane of glass for your servers. https://gethomepage.dev #DevOps #Homelab
+
+Nobody talks about how much time we waste on "quick" config changes. Here's how we cut that in half. https://example.com/your-post #SRE #Automation
+
+What do you do when prod is on fire and runbooks are outdated? We started here. https://example.com/runbooks #DevOps #IncidentResponse
+

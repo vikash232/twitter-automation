@@ -1,0 +1,18 @@
+# Copy to terraform.tfvars and set your values.
+# Emails must be verified in SES (same region as Lambda).
+
+aws_profile    = "vikash-own"
+region         = "us-east-1"
+reminder_email = "you@example.com"
+from_email     = "you@example.com"
+
+# Optional: different time. 7 PM UTC example:
+# schedule_cron = "cron(0 19 * * ? *)"
+
+# --- Auto-post tweets at 8 AM / 1 PM / 6 PM IST (optional) ---
+# Get from X Developer Portal: Consumer Key, Consumer Secret; then regenerate Access Token with Read and Write and get Access Token Secret.
+# enable_auto_tweet = true
+# twitter_consumer_key         = "your_consumer_key"
+# twitter_consumer_secret      = "your_consumer_secret"
+# twitter_access_token         = "your_access_token"
+# twitter_access_token_secret  = "your_access_token_secret"

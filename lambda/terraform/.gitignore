@@ -1,0 +1,8 @@
+.terraform/
+*.tfstate
+*.tfstate.*
+*.tfplan
+lambda.zip
+post_tweet.zip
+.terraform.lock.hcl
+terraform.tfvars

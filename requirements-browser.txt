@@ -1,0 +1,2 @@
+# For free browser-based posting (no API credits). Install: pip3 install -r requirements-browser.txt && playwright install chromium
+playwright>=1.40.0

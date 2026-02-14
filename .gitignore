@@ -1,0 +1,7 @@
+.twitter_auth/
+.venv/
+lambda/terraform/terraform.tfvars
+lambda/terraform/*.tfstate
+lambda/terraform/*.tfstate.*
+lambda/terraform/tfplan
+lambda/post_tweet.zip
