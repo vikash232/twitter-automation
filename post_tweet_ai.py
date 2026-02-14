@@ -59,7 +59,9 @@ def generate_tweet(slot: str) -> str:
         raise SystemExit("Set GEMINI_API_KEY (get one at https://aistudio.google.com/apikey)")
 
     genai.configure(api_key=api_key)
-    model = genai.GenerativeModel("gemini-pro")
+    # gemini-pro is deprecated; use a current model (e.g. gemini-1.5-flash or gemini-2.0-flash)
+    model_name = os.environ.get("GEMINI_MODEL", "gemini-1.5-flash")
+    model = genai.GenerativeModel(model_name)
     prompt = PROMPTS.get(slot, PROMPTS["morning"])
     response = model.generate_content(prompt)
     text = (response.text or "").strip()
