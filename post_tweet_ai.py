@@ -37,21 +37,45 @@ def get_slot():
     return "evening"
 
 
+# Shared rules so tweets don't sound like AI copy-paste (newbies and experienced devs should not spot it).
+ANTI_AI_RULES = (
+    "Never use these words/phrases: folks, remember, key takeaway, pro tip, here's the thing, the real culprit?, "
+    "measure everything, moral of the story, bottom line. No sign-off line that summarizes the tweet. "
+    "Avoid: three-part structure every time (setup then development then conclusion), perfectly balanced sentence lengths, "
+    "every sentence carrying equal weight. When the goal is to ask a question, do not give the answer in the tweet."
+)
+HUMAN_STYLE = (
+    "Do: one concrete technical detail (metric name, label, tool, doc path). Vary structure—question one day, "
+    "one-liner the next, short scenario the next. Optional fragment or abbreviation (k8s, imo, ymmv). "
+    "Optional time/context (still, again, last week). Sound like a quick post to a team channel or timeline, not a blog summary. "
+    "Under 280 characters. Plain text. 1-2 hashtags only if they fit naturally. No quotes around the tweet."
+)
+
 PROMPTS = {
     "morning": (
-        "Generate a single tweet for DevOps, SRE, or cloud engineering. "
-        "Style: educational tip or something you learned (e.g. observability, Kubernetes, Terraform, CI/CD). "
-        "Sound like a human practitioner. Under 280 characters, plain text, no hashtags unless one fits naturally. No quotes around the tweet."
+        ANTI_AI_RULES + " " + HUMAN_STYLE + " "
+        "Slot: morning. Tip or small lesson for Kubernetes/cloud-native/SRE/DevOps. "
+        "No 'remember' or 'key takeaway'. One specific thing (e.g. label, doc, flag). "
+        "Optional: 'still see people do X' or 'switched to Y and it helped'. Name a resource so a link can be added. "
+        "Short; can be one sentence plus a fragment. "
+        "Good example (match tone and specificity, do not copy): "
+        '"Semantic labeling: use app.kubernetes.io/name and friends so monitoring tools actually work. kubernetes.io recommended labels."'
     ),
     "afternoon": (
-        "Generate a single tweet for DevOps/SRE audience. "
-        "Style: short hot take or personal story (e.g. what actually caused an outage, a mistake that taught you something). "
-        "Human and specific. Under 280 characters, plain text. No quotes around the tweet."
+        ANTI_AI_RULES + " " + HUMAN_STYLE + " "
+        "Slot: afternoon. War story or hot take for Kubernetes/SRE/DevOps. "
+        "Specific situation: what broke, what you changed. No punchline that sounds like a moral. "
+        "Optional mild frustration or ymmv. No 'the real culprit?' style. "
+        "Good example (match tone and specificity, do not copy): "
+        '"To cut k8s cloud cost you have to fix over-provisioning, scaling, and discounted compute. Most orgs see 30-60% drop when they do."'
     ),
     "evening": (
-        "Generate a single tweet for DevOps/SRE audience. "
-        "Style: engaging question or prompt to spark replies (e.g. what do you do when..., how do you..., what's your take on...). "
-        "Human and concise. Under 280 characters, plain text. No quotes around the tweet."
+        ANTI_AI_RULES + " " + HUMAN_STYLE + " "
+        "Slot: evening. Scenario plus question so people reply. Kubernetes/cloud-native/SRE/DevOps. "
+        "1-2 lines with concrete details (numbers, tech names), then a direct question that has an answer—do not give the answer in the tweet. "
+        "Optional 'how do you handle this?' tone. "
+        "Good example (match tone and specificity, do not copy): "
+        '"You have 10k Lambdas hitting RDS. Too many connections. You can\'t scale max_connections. What service lets them share a small connection pool?"'
     ),
 }
 
