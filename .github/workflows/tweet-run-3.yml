@@ -1,7 +1,9 @@
-# Manual tweet only (no schedule). Scheduled posts use tweet-run-1/2/3.yml with RUN_INDEX.
-name: Tweet (AI, manual)
+# Run 3: 6 PM IST (12:30 UTC). Content type chosen by date + RUN_INDEX (rotation).
+name: Tweet Run 3 (6 PM IST)
 
 on:
+  schedule:
+    - cron: "30 12 * * *"
   workflow_dispatch:
 
 jobs:
@@ -16,11 +18,11 @@ jobs:
           python-version: "3.11"
 
       - name: Install dependencies
-        run: |
-          pip install -r requirements-ai.txt
+        run: pip install -r requirements-ai.txt
 
       - name: Run AI poster
         env:
+          RUN_INDEX: "3"
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
           GEMINI_MODEL: gemini-2.5-flash
           TWITTER_CONSUMER_KEY: ${{ secrets.TWITTER_CONSUMER_KEY }}
