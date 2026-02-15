@@ -75,82 +75,89 @@ ANTI_AI_RULES = (
     "Avoid: three-part structure every time (setup then development then conclusion), perfectly balanced sentence lengths, "
     "every sentence carrying equal weight. When the goal is to ask a question, do not give the answer in the tweet. "
     "Do NOT use quotes in the tweet (no \"...\" or '...' around phrases—only backticks for code). "
-    "Do NOT use time references: no yesterday, today, this morning, afternoon, last night, last week, this week, recently, etc. Keep it timeless/situational."
+    "Do NOT use time references: no yesterday, today, this morning, afternoon, last night, last week, 2am, 3 hours, recently, etc. Keep it timeless/situational."
 )
 HUMAN_STYLE = (
-    "Do: one concrete technical detail (metric name, label, tool, doc path). Vary structure—question one day, "
-    "one-liner the next, short scenario the next. Optional fragment or abbreviation (k8s, imo, ymmv). "
+    "Do: one concrete technical detail (metric name, label, tool, doc path). Optional fragment or abbreviation (k8s, imo, ymmv). "
     "Sound like a quick post to a team channel or timeline, not a blog summary. "
-    "Under 280 characters. Plain text. 1-2 hashtags only if they fit naturally. Output the tweet only, no quotes around it."
+    "Under 280 characters total. Plain text. 1-2 hashtags only if they fit naturally. Output the tweet only, no quotes around it."
 )
-# Every tweet must feel different: different situation, tool, problem, or angle. No repeating the same formula.
+# Required structure: 2 lines then bullet points then a closing line. Use newlines.
+TWEET_STRUCTURE = (
+    "Structure (required): (1) Two short lines of context or setup. (2) Then 2-3 bullet points (use • or -). (3) Then one closing line (question or CTA). "
+    "Use actual newlines between each part. Keep each line short so the whole tweet stays under 280 characters including the reference."
+)
+# Include a reference link so the reader has somewhere to go.
+REFERENCE_RULES = (
+    "Include one reference in every tweet: a GitHub repo URL, YouTube video URL, or official doc link (e.g. kubernetes.io/docs/..., github.com/..., youtube.com/...). "
+    "Put the URL at the end or on its own line. Pick a concrete resource that fits the topic (e.g. Prometheus docs, a well-known talk, CNCF project). "
+    "Give the reader a clear place to learn more."
+)
+# Every tweet must feel different. Never repeat or near-copy.
 VARIETY_RULES = (
-    "Generate something different every time. Pick a different situation, tool, failure mode, or question each time. "
-    "Rotate: different clouds (AWS, GCP, k8s), different pain (builds, config, observability, cost, security), different formats (one-liner, two-line, question first). "
-    "Never output the same or nearly same tweet. No generic filler—each tweet should feel like a specific moment or question."
+    "Generate something different every time. Never repeat the same tweet or a near-copy. Change the opening, the scenario, the tool, and the reference every time. "
+    "Rotate: different clouds (AWS, GCP, k8s), different pain (builds, config, observability, cost, security). "
+    "No generic filler—each tweet should feel like a specific moment or question with a distinct link."
 )
-# X/Twitter formatting: backticks make code render in monospace. Use for commands, Dockerfile lines, config keys, etc.
+# X/Twitter formatting: backticks make code render in monospace.
 X_FORMATTING = (
-    "Format for X: wrap code, commands, and technical identifiers in backticks (e.g. `kubectl get pods`, `FROM my-base-image`, "
-    "`app.kubernetes.io/name`). Do not use quotation marks for emphasis; backticks only for code/identifiers. "
-    "When sharing a tip or problem: short setup, then a line in backticks for the command/snippet, then consequence or question—keeps it scannable."
+    "Wrap code and technical identifiers in backticks (e.g. `kubectl get pods`, `livenessProbe`). No quotation marks for emphasis."
 )
 
 # Content types: info, question, poll, cricket. Info/question/cricket have variants; poll is single.
 PROMPTS_INFO = (
-    ANTI_AI_RULES + " " + HUMAN_STYLE + " " + VARIETY_RULES + " " + X_FORMATTING + " "
+    ANTI_AI_RULES + " " + HUMAN_STYLE + " " + TWEET_STRUCTURE + " " + REFERENCE_RULES + " " + VARIETY_RULES + " " + X_FORMATTING + " "
     "Type: INFO/LEARNING. One tweet that teaches something or shares a useful resource for Kubernetes/cloud-native/SRE/DevOps. "
-    "Tip, small lesson, or doc/tool worth knowing. No 'remember' or 'key takeaway'. One specific thing (e.g. label, doc, flag). "
-    "Optional pattern: problem line, then one line in backticks (command or snippet), then consequence or question. "
-    "Good example (match tone and formatting, do not copy): "
-    '"Semantic labeling: use `app.kubernetes.io/name` and friends so monitoring tools actually work. kubernetes.io recommended labels."'
+    "Use the required structure: 2 lines context, then 2-3 bullets, then closing line, then a GitHub/YouTube/doc link. "
+    "Example structure only (do not copy; use a different topic and link): "
+    "Containers restart before app is ready?\n"
+    "Use a startup probe so k8s waits.\n"
+    "• Add `startupProbe` with longer initialDelaySeconds\n"
+    "• Then `livenessProbe` for ongoing health\n"
+    "What changed your rollout stability?\n"
+    "https://kubernetes.io/docs/concepts/workloads/pods/pod-lifecycle/#startup-probe"
 ), (
-    ANTI_AI_RULES + " " + HUMAN_STYLE + " " + VARIETY_RULES + " " + X_FORMATTING + " "
-    "Type: INFO = LESSON LEARNED / MISTAKE. One tweet about something that went wrong or a lesson from production (Kubernetes/SRE/DevOps). "
-    "Concrete: what broke, what you changed; use backticks for the command/config that bit you. No moral of the story. "
-    "Good example (match tone, do not copy): "
-    '"Rollout stuck for an hour. Missing readiness probe. Now we always add both `livenessProbe` and `readinessProbe`."'
+    ANTI_AI_RULES + " " + HUMAN_STYLE + " " + TWEET_STRUCTURE + " " + REFERENCE_RULES + " " + VARIETY_RULES + " " + X_FORMATTING + " "
+    "Type: INFO = LESSON LEARNED / MISTAKE. One tweet about a production lesson (Kubernetes/SRE/DevOps). "
+    "Structure: 2 lines setup, 2-3 bullets (what broke, what you changed), closing line, then a reference link. Use backticks for config/commands. "
+    "Example structure only (do not copy): 2 lines + • point • point + closing question + URL."
 ), (
-    ANTI_AI_RULES + " " + HUMAN_STYLE + " " + VARIETY_RULES + " " + X_FORMATTING + " "
-    "Type: INFO = SHORT HOW-TO or SWITCH. One tweet: we switched to X / how we do Y (Kubernetes/cloud/SRE). One concrete detail; backticks for commands. "
-    "Good example (match tone, do not copy): "
-    '"Moved runbooks into the repo next to code. `docs/runbooks/` + CI so they stay in sync."'
+    ANTI_AI_RULES + " " + HUMAN_STYLE + " " + TWEET_STRUCTURE + " " + REFERENCE_RULES + " " + VARIETY_RULES + " " + X_FORMATTING + " "
+    "Type: INFO = SHORT HOW-TO or SWITCH. One tweet: we switched to X / how we do Y. Structure: 2 lines, bullets, closing, link. "
+    "Example structure only (do not copy): 2 lines + • • + closing + GitHub or doc URL."
 )
 PROMPTS_QUESTION = (
-    ANTI_AI_RULES + " " + HUMAN_STYLE + " " + VARIETY_RULES + " " + X_FORMATTING + " "
-    "Type: ASK FOR OPINION/EXPERIENCE. One tweet inviting people to share what they use, their take, or experience. Kubernetes/cloud-native/SRE/DevOps. "
-    "Ask: what do you use? how do you handle X? what's your take? No punchline that summarizes. Use backticks for tools/commands when naming them. Concrete setup then clear ask for replies. "
-    "Good example (match tone, do not copy): "
-    '"What do you use for k8s cost visibility—in-house dashboards, Kubecost, OpenCost, or something else? Curious what actually sticks in production."'
+    ANTI_AI_RULES + " " + HUMAN_STYLE + " " + TWEET_STRUCTURE + " " + REFERENCE_RULES + " " + VARIETY_RULES + " " + X_FORMATTING + " "
+    "Type: ASK FOR OPINION/EXPERIENCE. One tweet inviting people to share what they use or their experience. Kubernetes/cloud-native/SRE/DevOps. "
+    "Structure: 2 lines context, 2-3 bullets (options or angles), closing question, then a GitHub/YouTube/doc link. "
+    "Example structure only (do not copy): 2 lines + • • + question + URL."
 ), (
-    ANTI_AI_RULES + " " + HUMAN_STYLE + " " + VARIETY_RULES + " " + X_FORMATTING + " "
-    "Type: ASK = HOW DO YOU HANDLE. One tweet asking how others handle a specific DevOps/SRE/k8s problem. Optional: one line in backticks for the pain point. "
-    "Good example (match tone, do not copy): "
-    "\"How do you handle config drift between envs? We're still half-manual. Something that doesn't require rewriting every `terraform apply`?\""
+    ANTI_AI_RULES + " " + HUMAN_STYLE + " " + TWEET_STRUCTURE + " " + REFERENCE_RULES + " " + VARIETY_RULES + " " + X_FORMATTING + " "
+    "Type: ASK = HOW DO YOU HANDLE. One tweet asking how others handle a specific DevOps/SRE/k8s problem. "
+    "Structure: 2 lines setup, 2-3 bullets (e.g. options or pain points), closing question, then reference link. "
+    "Example structure only (do not copy): 2 lines + • • + question + URL."
 ), (
-    ANTI_AI_RULES + " " + HUMAN_STYLE + " " + VARIETY_RULES + " " + X_FORMATTING + " "
-    "Type: ASK = WHAT'S YOUR TAKE. One tweet asking for opinion on a tool, practice, or trend (Kubernetes/SRE/DevOps). Backticks for tool names. "
-    "Good example (match tone, do not copy): "
-    "\"What's your take on GitOps for non-k8s infra? Terraform + Atlantis, Pulumi, or something else?\""
+    ANTI_AI_RULES + " " + HUMAN_STYLE + " " + TWEET_STRUCTURE + " " + REFERENCE_RULES + " " + VARIETY_RULES + " " + X_FORMATTING + " "
+    "Type: ASK = WHAT'S YOUR TAKE. One tweet asking for opinion on a tool, practice, or trend. "
+    "Structure: 2 lines, bullets, closing question, link. Never repeat the same question or link. "
+    "Example structure only (do not copy): 2 lines + • • + question + URL."
 )
 PROMPTS_CRICKET = (
     ANTI_AI_RULES + " " + HUMAN_STYLE + " " + VARIETY_RULES + " "
     "Type: CRICKET/SPORTS = OPINION or TAKE. One tweet about cricket: match takeaway, player form, who will win, a stat or moment. "
-    "Same rules: no AI phrases, concrete, natural. No time refs (yesterday, today, last night). Under 280 chars. 1-2 hashtags if natural (#Cricket #IPL #TeamIndia). "
-    "Good example (match tone, do not copy): "
-    "\"That spell from Bumrah changed the game. Still think we're one batter short in the middle order.\""
+    "Preferred structure: 2 short lines, then 2-3 bullet points, then a closing line. Optional: link to highlights, stats, or article if it fits. "
+    "No time refs (yesterday, today, last night). Under 280 chars. 1-2 hashtags if natural (#Cricket #IPL #TeamIndia). Never repeat the same take."
 ), (
     ANTI_AI_RULES + " " + HUMAN_STYLE + " " + VARIETY_RULES + " "
     "Type: CRICKET/SPORTS = QUESTION to engage. One tweet asking for opinion: your XI, best catch, who should open, etc. "
-    "Different situation or angle each time. No time refs (yesterday, today, last night). Keep it short. Under 280 chars. "
-    "Good example (match tone, do not copy): "
-    '"Who gets into your XI for the next Test? Would you stick with the same openers or try someone new?"'
+    "Preferred structure: 2 lines, then 2-3 bullets (e.g. options or angles), then closing question. Optional link (stats, highlights). "
+    "Different situation each time. No time refs. Under 280 chars. Never repeat the same question."
 )
 PROMPT_POLL = (
     ANTI_AI_RULES + " " + VARIETY_RULES + " "
     "Type: POLL. Generate a Twitter poll for Kubernetes/cloud-native/SRE/DevOps. "
     "Output format (strict): Line 1 = the poll question (under 280 chars). Lines 2-5 = exactly 2 to 4 poll options, one per line, each option under 25 characters. "
-    "Pick a different topic each time (builds, observability, config, cost, security, etc.). No time refs. Question can use backticks for technical terms. Options: short, clear. No quotes around the output. Example format:\n"
+    "Pick a different topic every time; never repeat the same question or option set. No time refs. Question can use backticks. Options: short, clear. No quotes. Example format:\n"
     "Preferred way to run stateful workloads on k8s?\n"
     "StatefulSet\n"
     "Operator (e.g. Strimzi)\n"
