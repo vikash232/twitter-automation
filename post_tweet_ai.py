@@ -68,90 +68,102 @@ def _slot_to_content_type(slot: str) -> str:
     return {"morning": "info", "afternoon": "question", "evening": "poll"}.get(slot, "info")
 
 
-# Shared rules so tweets don't sound like AI copy-paste (newbies and experienced devs should not spot it).
+# CRITICAL: Prepended to every prompt so the model never outputs this repeated tweet.
+FORBIDDEN_PHRASE = (
+    "CRITICAL—FORBIDDEN: Do NOT use the phrase 'one thing that actually moved the needle' or 'one thing that moved the needle for our SLOs' or "
+    "'one thing that actually...' or any similar opening. That phrase is banned. Start with a different opening every time. "
+)
+# Shared rules so tweets don't sound like AI copy-paste.
 ANTI_AI_RULES = (
-    "Never use these words/phrases: folks, remember, key takeaway, pro tip, here's the thing, the real culprit?, "
-    "measure everything, moral of the story, bottom line. No sign-off line that summarizes the tweet. "
-    "Avoid: three-part structure every time (setup then development then conclusion), perfectly balanced sentence lengths, "
-    "every sentence carrying equal weight. When the goal is to ask a question, do not give the answer in the tweet. "
-    "Do NOT use quotes in the tweet (no \"...\" or '...' around phrases—only backticks for code). "
-    "Do NOT use time references: no yesterday, today, this morning, afternoon, last night, last week, 2am, 3 hours, recently, etc. Keep it timeless/situational."
+    "Never use: folks, remember, key takeaway, pro tip, here's the thing, the real culprit?, measure everything, moral of the story, bottom line. "
+    "No sign-off that summarizes the tweet. Do NOT use quotation marks around phrases—only backticks for code. "
+    "Do NOT use time references: no yesterday, today, this morning, afternoon, last night, last week, 2am, 3 hours, recently. Keep it timeless."
 )
 HUMAN_STYLE = (
-    "Do: one concrete technical detail (metric name, label, tool, doc path). Optional fragment or abbreviation (k8s, imo, ymmv). "
-    "Sound like a quick post to a team channel or timeline, not a blog summary. "
-    "Under 280 characters total. Plain text. 1-2 hashtags only if they fit naturally. Output the tweet only, no quotes around it."
+    "Write like someone thinking through a problem or lesson: punchy opening, then break it down with clear sections. "
+    "Use real technical detail (tool, command, metric). Sound like a dev posting to the timeline, not a blog. "
+    "Output the tweet only, no quotes around it. Total length: under 280 characters."
 )
-# Required structure: 2 lines then bullet points then a closing line. Use newlines.
+# Paragraph-style: blank lines between sections (double newline). Like Branko/Akhilesh style.
 TWEET_STRUCTURE = (
-    "Structure (required): (1) Two short lines of context or setup. (2) Then 2-3 bullet points (use • or -). (3) Then one closing line (question or CTA). "
-    "Use actual newlines between each part. Keep each line short so the whole tweet stays under 280 characters including the reference."
+    "Format (required): Use PARAGRAPH GAPS—put a blank line (double newline) between each section so the tweet has clear visual paragraphs. "
+    "Structure: (1) Opening line or two (hook or problem). (2) Blank line. (3) Section label or transition (e.g. 'The fix:', 'Problem:', 'Requirement:'). "
+    "(4) Blank line. (5) 2-4 short points (each on its own line; use - or • or just newlines). (6) Blank line. (7) Closing line or lesson. "
+    "(8) Blank line. (9) One valid URL. (10) 1-2 hashtags. Use \\n\\n for blank lines between sections so it reads in distinct paragraphs."
 )
-# Include a reference link so the reader has somewhere to go.
+# Real, valid URLs and correct hashtags only.
 REFERENCE_RULES = (
-    "Include one reference in every tweet: a GitHub repo URL, YouTube video URL, or official doc link (e.g. kubernetes.io/docs/..., github.com/..., youtube.com/...). "
-    "Put the URL at the end or on its own line. Pick a concrete resource that fits the topic (e.g. Prometheus docs, a well-known talk, CNCF project). "
-    "Give the reader a clear place to learn more."
+    "Include exactly one REAL, valid URL that exists. Use only these domains (pick one that fits the topic): "
+    "https://kubernetes.io/docs/..., https://docs.github.com/..., https://prometheus.io/docs/..., https://docs.docker.com/..., "
+    "https://cloud.google.com/docs/..., https://docs.aws.amazon.com/..., https://www.terraform.io/docs/..., https://github.com/... "
+    "Do not invent URLs. End the tweet with the URL on its own line, then 1-2 real hashtags: #DevOps #SRE #Kubernetes #Docker #Cloud #K8s #CloudNative #Terraform #GitOps (pick ones that fit)."
 )
 # Every tweet must feel different. Never repeat or near-copy.
 VARIETY_RULES = (
-    "Generate something different every time. Never repeat the same tweet or a near-copy. Change the opening, the scenario, the tool, and the reference every time. "
-    "Rotate: different clouds (AWS, GCP, k8s), different pain (builds, config, observability, cost, security). "
+    "Generate something different every time. Never repeat the same tweet or a near-copy. Change the opening line, the scenario, the tool, and the reference every time. "
+    "Do NOT reuse the same opening (e.g. never repeat 'one thing that...' or similar). Rotate: different clouds (AWS, GCP, k8s), different pain (builds, config, observability, cost, security). "
     "No generic filler—each tweet should feel like a specific moment or question with a distinct link."
+)
+# Topic/angle rotation so each run gets a different focus (reduces repetition across days).
+TOPIC_ANGLES = (
+    "Focus this tweet on: build speed or CI/CD.",
+    "Focus this tweet on: config management or drift.",
+    "Focus this tweet on: observability or metrics (not SLOs or 'moved the needle').",
+    "Focus this tweet on: cost or resource usage.",
+    "Focus this tweet on: security or supply chain.",
+    "Focus this tweet on: runbooks or incident response.",
+    "Focus this tweet on: probes, health checks, or rollout stability.",
+    "Focus this tweet on: labels, naming, or discovery.",
 )
 # X/Twitter formatting: backticks make code render in monospace.
 X_FORMATTING = (
     "Wrap code and technical identifiers in backticks (e.g. `kubectl get pods`, `livenessProbe`). No quotation marks for emphasis."
 )
 
-# Content types: info, question, poll, cricket. Info/question/cricket have variants; poll is single.
+# Content types: info, question, poll, cricket. Style = paragraph gaps + thinking through + valid URL + hashtags.
 PROMPTS_INFO = (
     ANTI_AI_RULES + " " + HUMAN_STYLE + " " + TWEET_STRUCTURE + " " + REFERENCE_RULES + " " + VARIETY_RULES + " " + X_FORMATTING + " "
-    "Type: INFO/LEARNING. One tweet that teaches something or shares a useful resource for Kubernetes/cloud-native/SRE/DevOps. "
-    "Use the required structure: 2 lines context, then 2-3 bullets, then closing line, then a GitHub/YouTube/doc link. "
-    "Example structure only (do not copy; use a different topic and link): "
-    "Containers restart before app is ready?\n"
-    "Use a startup probe so k8s waits.\n"
-    "• Add `startupProbe` with longer initialDelaySeconds\n"
-    "• Then `livenessProbe` for ongoing health\n"
-    "What changed your rollout stability?\n"
-    "https://kubernetes.io/docs/concepts/workloads/pods/pod-lifecycle/#startup-probe"
+    "Type: INFO/LEARNING. One tweet that teaches something (Kubernetes/cloud-native/SRE/DevOps). Use paragraph gaps (blank lines) between sections. "
+    "Example format (use different topic and URL; do not copy):\n"
+    "Containers restart before the app is ready?\n\n"
+    "The fix:\n\n"
+    "- Add `startupProbe` with longer initialDelaySeconds\n"
+    "- Then `livenessProbe` for ongoing health\n\n"
+    "Worth the one-line change.\n\n"
+    "https://kubernetes.io/docs/concepts/workloads/pods/pod-lifecycle/#startup-probe\n"
+    "#Kubernetes #DevOps"
 ), (
     ANTI_AI_RULES + " " + HUMAN_STYLE + " " + TWEET_STRUCTURE + " " + REFERENCE_RULES + " " + VARIETY_RULES + " " + X_FORMATTING + " "
-    "Type: INFO = LESSON LEARNED / MISTAKE. One tweet about a production lesson (Kubernetes/SRE/DevOps). "
-    "Structure: 2 lines setup, 2-3 bullets (what broke, what you changed), closing line, then a reference link. Use backticks for config/commands. "
-    "Example structure only (do not copy): 2 lines + • point • point + closing question + URL."
+    "Type: INFO = LESSON LEARNED. One tweet about a mistake or production lesson. Use paragraph gaps. Structure: hook, then 'The fix:' or 'What we did:', then 2-3 points, then lesson, then URL, then hashtags. "
+    "Example format only: opening line\\n\\nsection label\\n\\n- point\\n- point\\n\\nclosing\\n\\nURL\\n#Hashtag"
 ), (
     ANTI_AI_RULES + " " + HUMAN_STYLE + " " + TWEET_STRUCTURE + " " + REFERENCE_RULES + " " + VARIETY_RULES + " " + X_FORMATTING + " "
-    "Type: INFO = SHORT HOW-TO or SWITCH. One tweet: we switched to X / how we do Y. Structure: 2 lines, bullets, closing, link. "
-    "Example structure only (do not copy): 2 lines + • • + closing + GitHub or doc URL."
+    "Type: INFO = HOW-TO or SWITCH. One tweet: we switched to X / how we do Y. Use paragraph gaps. End with real URL and 1-2 hashtags. "
+    "Example format: hook\\n\\nlabel\\n\\npoints\\n\\nclosing\\n\\nURL\\n#Hashtag"
 )
 PROMPTS_QUESTION = (
     ANTI_AI_RULES + " " + HUMAN_STYLE + " " + TWEET_STRUCTURE + " " + REFERENCE_RULES + " " + VARIETY_RULES + " " + X_FORMATTING + " "
-    "Type: ASK FOR OPINION/EXPERIENCE. One tweet inviting people to share what they use or their experience. Kubernetes/cloud-native/SRE/DevOps. "
-    "Structure: 2 lines context, 2-3 bullets (options or angles), closing question, then a GitHub/YouTube/doc link. "
-    "Example structure only (do not copy): 2 lines + • • + question + URL."
+    "Type: ASK FOR OPINION/EXPERIENCE. One tweet inviting replies (what they use, their experience). Use paragraph gaps. End with real URL and hashtags. "
+    "Example format: scenario or question\\n\\nRequirement or options\\n\\n- point\\n- point\\n\\nClosing question\\n\\nURL\\n#Hashtag"
 ), (
     ANTI_AI_RULES + " " + HUMAN_STYLE + " " + TWEET_STRUCTURE + " " + REFERENCE_RULES + " " + VARIETY_RULES + " " + X_FORMATTING + " "
-    "Type: ASK = HOW DO YOU HANDLE. One tweet asking how others handle a specific DevOps/SRE/k8s problem. "
-    "Structure: 2 lines setup, 2-3 bullets (e.g. options or pain points), closing question, then reference link. "
-    "Example structure only (do not copy): 2 lines + • • + question + URL."
+    "Type: ASK = HOW DO YOU HANDLE. One tweet: scenario, then 'Problem:' or 'Requirement:', then 2-3 points, then how do you solve it? Use paragraph gaps. URL + hashtags at end. "
+    "Example format: hook\\n\\nlabel\\n\\npoints\\n\\nquestion\\n\\nURL\\n#Hashtag"
 ), (
     ANTI_AI_RULES + " " + HUMAN_STYLE + " " + TWEET_STRUCTURE + " " + REFERENCE_RULES + " " + VARIETY_RULES + " " + X_FORMATTING + " "
-    "Type: ASK = WHAT'S YOUR TAKE. One tweet asking for opinion on a tool, practice, or trend. "
-    "Structure: 2 lines, bullets, closing question, link. Never repeat the same question or link. "
-    "Example structure only (do not copy): 2 lines + • • + question + URL."
+    "Type: ASK = WHAT'S YOUR TAKE. One tweet asking for opinion. Paragraph gaps. Real URL and 1-2 hashtags. Never repeat the same question or link. "
+    "Example format: hook\\n\\npoints\\n\\nquestion\\n\\nURL\\n#Hashtag"
 )
+# Cricket = T20 World Cup 2026. Focus on the ongoing tournament and daily matches.
 PROMPTS_CRICKET = (
-    ANTI_AI_RULES + " " + HUMAN_STYLE + " " + VARIETY_RULES + " "
-    "Type: CRICKET/SPORTS = OPINION or TAKE. One tweet about cricket: match takeaway, player form, who will win, a stat or moment. "
-    "Preferred structure: 2 short lines, then 2-3 bullet points, then a closing line. Optional: link to highlights, stats, or article if it fits. "
-    "No time refs (yesterday, today, last night). Under 280 chars. 1-2 hashtags if natural (#Cricket #IPL #TeamIndia). Never repeat the same take."
+    ANTI_AI_RULES + " " + HUMAN_STYLE + " " + TWEET_STRUCTURE + " " + VARIETY_RULES + " "
+    "Type: CRICKET = T20 WORLD CUP 2026. One tweet about the ongoing T20 World Cup 2026: today's matches, a match result, key player performance, or a standout moment from the tournament. "
+    "Write as if matches are happening every day—takeaway from a game, who stood out, key stat, or turning point. Use paragraph gaps. "
+    "End with 1-2 hashtags: #T20WorldCup2026 #T20WorldCup #Cricket #TeamIndia (or other team hashtags as relevant). Optional: valid URL (ICC, highlights, scorecard). Never repeat the same take."
 ), (
-    ANTI_AI_RULES + " " + HUMAN_STYLE + " " + VARIETY_RULES + " "
-    "Type: CRICKET/SPORTS = QUESTION to engage. One tweet asking for opinion: your XI, best catch, who should open, etc. "
-    "Preferred structure: 2 lines, then 2-3 bullets (e.g. options or angles), then closing question. Optional link (stats, highlights). "
-    "Different situation each time. No time refs. Under 280 chars. Never repeat the same question."
+    ANTI_AI_RULES + " " + HUMAN_STYLE + " " + TWEET_STRUCTURE + " " + VARIETY_RULES + " "
+    "Type: CRICKET = T20 WORLD CUP 2026 QUESTION. One tweet engaging fans about the ongoing T20 World Cup 2026: who wins today's match? your XI for the next game? best performance so far? prediction for the knockouts? "
+    "Use paragraph gaps. End with #T20WorldCup2026 #T20WorldCup #Cricket or team hashtag. Different match or angle each time. Never repeat the same question."
 )
 PROMPT_POLL = (
     ANTI_AI_RULES + " " + VARIETY_RULES + " "
@@ -168,16 +180,21 @@ PROMPT_POLL = (
 
 def _get_prompt(content_type: str, day_of_year: int, run_index: int) -> str:
     """Return the prompt string for this content type and variant (by date + run)."""
+    prefix = FORBIDDEN_PHRASE
+    angle = TOPIC_ANGLES[(day_of_year * 3 + run_index) % len(TOPIC_ANGLES)]
+    suffix = f"\n\n{angle} Do not use the same opening or topic as a generic SLO/observability tweet."
     if content_type == "info":
         idx = (day_of_year + run_index) % len(PROMPTS_INFO)
-        return PROMPTS_INFO[idx]
+        return prefix + PROMPTS_INFO[idx] + suffix
     if content_type == "question":
         idx = (day_of_year + run_index) % len(PROMPTS_QUESTION)
-        return PROMPTS_QUESTION[idx]
+        return prefix + PROMPTS_QUESTION[idx] + suffix
     if content_type == "cricket":
         idx = (day_of_year + run_index) % len(PROMPTS_CRICKET)
-        return PROMPTS_CRICKET[idx]
-    return PROMPT_POLL
+        return prefix + PROMPTS_CRICKET[idx] + "\n\nBase this on T20 World Cup 2026: a specific match, result, player, or moment from the ongoing tournament. Vary which match or team you talk about."
+    if content_type == "poll":
+        return prefix + PROMPT_POLL + f"\n\n{angle}"
+    return prefix + PROMPT_POLL
 
 
 def generate_tweet(content_type: str, day_of_year: int, run_index: int) -> str:
