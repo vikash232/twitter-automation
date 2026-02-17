@@ -1,9 +1,9 @@
-# Run 3: 6 PM IST (12:30 UTC). Content type chosen by date + RUN_INDEX (rotation).
-name: Tweet Run 3 (6 PM IST)
+# Run 3: 6:30 PM IST (13:00 UTC). Peak: India evening + US morning (9 AM EST). Content type by date + RUN_INDEX.
+name: Tweet Run 3 (6:30 PM IST)
 
 on:
   schedule:
-    - cron: "30 12 * * *"
+    - cron: "0 13 * * *"
   workflow_dispatch:
 
 jobs:

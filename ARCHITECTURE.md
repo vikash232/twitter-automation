@@ -101,7 +101,7 @@ flowchart TB
 |--------|---------|------------------|-----------|
 | 8 AM   | 2:30    | tweet-run-1.yml  | 1         |
 | 1 PM   | 7:30    | tweet-run-2.yml  | 2         |
-| 6 PM   | 12:30   | tweet-run-3.yml  | 3         |
+| 6:30 PM | 13:00   | tweet-run-3.yml  | 3         |
 
 Manual run: **Tweet (AI, manual)** in `twitter-ai.yml` — no schedule, no `RUN_INDEX`; content type inferred from current time (info / question / poll).
 
