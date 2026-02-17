@@ -115,31 +115,49 @@ TOPIC_ANGLES = (
     "Focus this tweet on: probes, health checks, or rollout stability.",
     "Focus this tweet on: labels, naming, or discovery.",
 )
+# For info tweets only: rotate which kind of data/theory so morning tweets are never the same.
+INFO_CONCEPT_ANGLES = (
+    "Explain or define one METRIC (what it counts, when to use it).",
+    "Explain one CONCEPT (error budget, backoff, hot partition, eventual consistency).",
+    "Explain HOW something works (probe order, rollout, retry logic).",
+    "Give one LESSON with a concrete data point or threshold.",
+    "Define or contrast two terms (SLI vs SLO, rate vs latency).",
+    "Explain a failure mode and the data that would have caught it.",
+)
 # X/Twitter formatting: backticks make code render in monospace.
 X_FORMATTING = (
     "Wrap code and technical identifiers in backticks (e.g. `kubectl get pods`, `livenessProbe`). No quotation marks for emphasis."
 )
+# Morning/info tweets: include real data or theory so folks can read and learn. Never repetitive.
+INFO_DATA_THEORY = (
+    "Include DATA or THEORY in every info tweet: define a metric (e.g. what `apiserver_requests_total` actually counts), "
+    "explain a concept (error budget, backoff, hot partition, eventual consistency), or give one concrete technical detail (formula, threshold, how it works). "
+    "Write so readers can learn something—not just a tip, but something they can read and retain. "
+    "Never repeat: use a different concept, metric, or topic every time. Rotate through: SLO vs SLI, rate vs latency, partition key design, probe types, "
+    "label conventions, retry/backoff theory, observability metrics, config drift, cost drivers—pick one and explain it briefly with paragraph gaps."
+)
 
-# Content types: info, question, poll, cricket. Style = paragraph gaps + thinking through + valid URL + hashtags.
+# Content types: info, question, poll, cricket. Info = morning-style, with data/theory. Style = paragraph gaps + valid URL + hashtags.
 PROMPTS_INFO = (
-    ANTI_AI_RULES + " " + HUMAN_STYLE + " " + TWEET_STRUCTURE + " " + REFERENCE_RULES + " " + VARIETY_RULES + " " + X_FORMATTING + " "
-    "Type: INFO/LEARNING. One tweet that teaches something (Kubernetes/cloud-native/SRE/DevOps). Use paragraph gaps (blank lines) between sections. "
-    "Example format (use different topic and URL; do not copy):\n"
-    "Containers restart before the app is ready?\n\n"
-    "The fix:\n\n"
-    "- Add `startupProbe` with longer initialDelaySeconds\n"
-    "- Then `livenessProbe` for ongoing health\n\n"
-    "Worth the one-line change.\n\n"
-    "https://kubernetes.io/docs/concepts/workloads/pods/pod-lifecycle/#startup-probe\n"
-    "#Kubernetes #DevOps"
+    ANTI_AI_RULES + " " + HUMAN_STYLE + " " + INFO_DATA_THEORY + " " + TWEET_STRUCTURE + " " + REFERENCE_RULES + " " + VARIETY_RULES + " " + X_FORMATTING + " "
+    "Type: INFO/LEARNING (morning-style). One tweet that TEACHES with data or theory (Kubernetes/cloud-native/SRE/DevOps). Use paragraph gaps. "
+    "Include at least one: metric definition, concept explanation, or how-it-works detail so folks can read and learn. "
+    "Example format (use a DIFFERENT concept and URL every time—never repeat the same topic):\n"
+    "What does `container_memory_working_set_bytes` actually measure?\n\n"
+    "The data:\n\n"
+    "- Resident set + dirty memory. What the kernel could reclaim without swap.\n"
+    "- OOMKill uses this. Not RSS alone.\n\n"
+    "Use it for memory limits and alerts.\n\n"
+    "https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/\n"
+    "#Kubernetes #SRE"
 ), (
-    ANTI_AI_RULES + " " + HUMAN_STYLE + " " + TWEET_STRUCTURE + " " + REFERENCE_RULES + " " + VARIETY_RULES + " " + X_FORMATTING + " "
-    "Type: INFO = LESSON LEARNED. One tweet about a mistake or production lesson. Use paragraph gaps. Structure: hook, then 'The fix:' or 'What we did:', then 2-3 points, then lesson, then URL, then hashtags. "
-    "Example format only: opening line\\n\\nsection label\\n\\n- point\\n- point\\n\\nclosing\\n\\nURL\\n#Hashtag"
+    ANTI_AI_RULES + " " + HUMAN_STYLE + " " + INFO_DATA_THEORY + " " + TWEET_STRUCTURE + " " + REFERENCE_RULES + " " + VARIETY_RULES + " " + X_FORMATTING + " "
+    "Type: INFO = LESSON LEARNED (with data). One tweet about a mistake or production lesson. Include one concrete data point or concept (metric, threshold, why it failed). "
+    "Use paragraph gaps. Never repeat the same lesson or metric. Structure: hook, then 'The data:' or 'What we learned:', then 2-3 points with substance, then URL, then hashtags."
 ), (
-    ANTI_AI_RULES + " " + HUMAN_STYLE + " " + TWEET_STRUCTURE + " " + REFERENCE_RULES + " " + VARIETY_RULES + " " + X_FORMATTING + " "
-    "Type: INFO = HOW-TO or SWITCH. One tweet: we switched to X / how we do Y. Use paragraph gaps. End with real URL and 1-2 hashtags. "
-    "Example format: hook\\n\\nlabel\\n\\npoints\\n\\nclosing\\n\\nURL\\n#Hashtag"
+    ANTI_AI_RULES + " " + HUMAN_STYLE + " " + INFO_DATA_THEORY + " " + TWEET_STRUCTURE + " " + REFERENCE_RULES + " " + VARIETY_RULES + " " + X_FORMATTING + " "
+    "Type: INFO = CONCEPT or HOW-IT-WORKS. One tweet that explains one concept: error budget, backoff, hot partition, SLI vs SLO, probe order, etc. "
+    "Give enough detail that someone can read and understand. Use paragraph gaps. Different concept every time. End with real URL and hashtags."
 )
 PROMPTS_QUESTION = (
     ANTI_AI_RULES + " " + HUMAN_STYLE + " " + TWEET_STRUCTURE + " " + REFERENCE_RULES + " " + VARIETY_RULES + " " + X_FORMATTING + " "
@@ -185,7 +203,8 @@ def _get_prompt(content_type: str, day_of_year: int, run_index: int) -> str:
     suffix = f"\n\n{angle} Do not use the same opening or topic as a generic SLO/observability tweet."
     if content_type == "info":
         idx = (day_of_year + run_index) % len(PROMPTS_INFO)
-        return prefix + PROMPTS_INFO[idx] + suffix
+        info_angle = INFO_CONCEPT_ANGLES[(day_of_year * 3 + run_index) % len(INFO_CONCEPT_ANGLES)]
+        return prefix + PROMPTS_INFO[idx] + suffix + f" This info tweet must: {info_angle}"
     if content_type == "question":
         idx = (day_of_year + run_index) % len(PROMPTS_QUESTION)
         return prefix + PROMPTS_QUESTION[idx] + suffix
