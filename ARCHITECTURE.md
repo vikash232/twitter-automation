@@ -7,7 +7,8 @@ flowchart LR
     subgraph triggers [Triggers]
         Cron1[Run 1: 2:30 UTC]
         Cron2[Run 2: 7:30 UTC]
-        Cron3[Run 3: 12:30 UTC]
+        Cron3[Run 3: 13:00 UTC]
+        Cron4[Run 4: 15:30 UTC]
         Manual[workflow_dispatch]
     end
 
@@ -15,6 +16,7 @@ flowchart LR
         W1[tweet-run-1.yml]
         W2[tweet-run-2.yml]
         W3[tweet-run-3.yml]
+        W4[tweet-run-4.yml]
         W0[twitter-ai.yml manual]
     end
 
@@ -32,11 +34,13 @@ flowchart LR
     Cron1 --> W1
     Cron2 --> W2
     Cron3 --> W3
+    Cron4 --> W4
     Manual --> W0
 
     W1 -->|RUN_INDEX=1| script
     W2 -->|RUN_INDEX=2| script
     W3 -->|RUN_INDEX=3| script
+    W4 -->|RUN_INDEX=4| script
     W0 -->|no RUN_INDEX| script
 
     Resolve --> Gen
@@ -46,8 +50,8 @@ flowchart LR
     Post --> XAPI
 ```
 
-- **Triggers:** Three scheduled runs (8 AM, 1 PM, 6 PM IST) plus optional manual run.
-- **Workflows:** Each run has its own workflow file and passes `RUN_INDEX` (1, 2, or 3). Manual run uses `twitter-ai.yml` and infers slot from time.
+- **Triggers:** Four scheduled runs (8 AM, 1 PM, 6:30 PM, 9 PM IST) plus optional manual run.
+- **Workflows:** Each run has its own workflow file and passes `RUN_INDEX` (1, 2, 3, or 4). Manual run uses `twitter-ai.yml` and infers slot from time.
 - **Script:** Reads `RUN_INDEX` + date → content type (rotation), calls Gemini for text (or poll), then posts via X API (or browser if `--post-via-browser`).
 
 ---
@@ -89,7 +93,7 @@ flowchart TB
     Parse -->|Plain text| APIPost
 ```
 
-- **Rotation:** Four content types (info, question, poll, cricket). Each day one type is “skipped” (4-cycle); the other three are assigned to runs 1–3 in an order that rotates (6 permutations). So 8 AM / 1 PM / 6 PM do not always map to the same type.
+- **Rotation:** Four content types (info, question, poll, cricket). Each day one type is “skipped” for runs 1–3 (4-cycle + 6 permutations); run 4 gets that skipped type. So all four types are used every day across 4 runs.
 - **Skip:** When `RUN_INDEX` is set, a deterministic ~5% skip per run so some days have only 2 tweets.
 - **Variants:** Info, question, and cricket each have 2–3 prompt variants; chosen by `(day_of_year + RUN_INDEX) % num_variants`.
 
@@ -102,6 +106,7 @@ flowchart TB
 | 8 AM   | 2:30    | tweet-run-1.yml  | 1         |
 | 1 PM   | 7:30    | tweet-run-2.yml  | 2         |
 | 6:30 PM | 13:00   | tweet-run-3.yml  | 3         |
+| 9 PM    | 15:30   | tweet-run-4.yml  | 4         |
 
 Manual run: **Tweet (AI, manual)** in `twitter-ai.yml` — no schedule, no `RUN_INDEX`; content type inferred from current time (info / question / poll).
 

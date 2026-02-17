@@ -20,20 +20,22 @@ CONTENT_TYPES = ("info", "question", "poll", "cricket")
 
 
 def _run_index_from_env():
-    """Return RUN_INDEX 1, 2, or 3 from env, or None if unset."""
+    """Return RUN_INDEX 1, 2, 3, or 4 from env, or None if unset."""
     raw = (os.environ.get("RUN_INDEX") or "").strip()
-    if raw in ("1", "2", "3"):
+    if raw in ("1", "2", "3", "4"):
         return int(raw)
     return None
 
 
 def get_content_type(day_of_year: int, run_index: int) -> str:
-    """Which content type (info, question, poll, cricket) for this day and run. Deterministic rotation."""
+    """Which content type (info, question, poll, cricket) for this day and run. Runs 1-3 get 3 types; run 4 gets the 4th (skipped) type."""
     skip = day_of_year % 4
     remaining = [t for i, t in enumerate(CONTENT_TYPES) if i != skip]
     perms = list(itertools.permutations(remaining))
     perm_index = (day_of_year // 4) % len(perms)
     order = perms[perm_index]
+    if run_index == 4:
+        return CONTENT_TYPES[skip]  # Run 4 = the type that was "skipped" for runs 1-3
     return order[run_index - 1]
 
 
